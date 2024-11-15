@@ -12,7 +12,7 @@ use cpal::{FromSample, SizedSample};
 use crossbeam_channel::{bounded, Receiver, Sender};
 
 fn main() {
-    let (input_sender, input_receiver) = bounded(4096);
+    let (input_sender, input_receiver) = bounded(8192);
 
     const DEFAULT_TRACK_SIZE: usize = 44_100 * 4 * 2 * 1;
 
