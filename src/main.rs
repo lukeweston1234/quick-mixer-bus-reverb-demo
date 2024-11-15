@@ -1,26 +1,37 @@
 mod audio;
 
-use audio::bus::{Bus};
+use std::sync::mpsc::channel;
+
+use audio::audio_graph_factory::build_audio_graph;
+use audio::bus::Bus;
 use audio::mixer::Mixer;
 use audio::playable::Playable;
-use audio::track::Track;
+use audio::track::{build_track, Track, TrackController};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SizedSample};
 use crossbeam_channel::{bounded, Receiver, Sender};
 
-
-
 fn main() {
     let (input_sender, input_receiver) = bounded(4096);
 
-    let mut track_one = Track::new(input_receiver, 44_100 * 4 * 2);
+    const DEFAULT_TRACK_SIZE: usize = 44_100 * 4 * 2 * 1;
 
-    track_one.only_feedback();
+    let (bus, track_controllers, mixer_controllers) =
+        build_audio_graph(input_receiver, 8, DEFAULT_TRACK_SIZE);
 
-    let mixer = Mixer::new(Box::new(track_one));
+    build_streams(input_sender, bus);
 
-    let bus = Bus::new(vec![Box::new(mixer)]);
+    for i in 0..8 {
+        track_controllers[i].record();
+        std::thread::sleep(std::time::Duration::from_secs(4));
+    }
 
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+}
+
+fn build_streams(input_sender: Sender<(f32, f32)>, bus: Bus<f32>) {
     let host = cpal::default_host();
 
     let in_device = host.default_input_device().unwrap();
@@ -41,12 +52,6 @@ fn main() {
         format => eprintln!("Unsupported sample format: {}", format),
     }
     println!("Processing stereo input to stereo output.");
-
-
-
-    loop {
-        std::thread::sleep(std::time::Duration::from_secs(1));
-    }
 }
 
 fn run_in<T>(device: &cpal::Device, config: &cpal::StreamConfig, sender: Sender<(f32, f32)>)
@@ -95,7 +100,7 @@ where
 {
     let channels = config.channels as usize;
 
-    let mut next_value = move || bus.tick().unwrap_or((0.0,0.0));
+    let mut next_value = move || bus.tick().unwrap_or((0.0, 0.0));
 
     let err_fn = |err| eprintln!("An error occurred on stream: {}", err);
     let stream = device.build_output_stream(

@@ -6,3 +6,11 @@ edition = "2021"
 [dependencies]
 cpal = "0.15.3"
 crossbeam-channel = "0.5.13"
+
+[profile.release]
+panic = "abort" 
+codegen-units = 1 
+lto = "fat"
+opt-level = 3 
+strip = true 
+target-cpu="native"

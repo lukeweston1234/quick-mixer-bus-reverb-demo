@@ -118,10 +118,10 @@ impl Freeverb {
             frozen: false,
         };
 
-        freeverb.set_wet(1.0);
-        freeverb.set_width(0.5);
-        freeverb.set_dampening(0.5);
-        freeverb.set_room_size(0.5);
+        freeverb.set_wet(0.7);
+        freeverb.set_width(0.7);
+        freeverb.set_dampening(0.6);
+        freeverb.set_room_size(0.8);
         freeverb.set_frozen(false);
 
         freeverb
